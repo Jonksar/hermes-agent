@@ -220,6 +220,7 @@ def _iter_proc_fd_targets():
 _DARWIN_ALL_PIDS = 1
 _DARWIN_PIDLISTFDS = 1
 _DARWIN_PIDFDVNODEPATHINFO = 2
+_DARWIN_FDTYPE_VNODE = 1  # PROX_FDTYPE_VNODE
 _DARWIN_PROC_FD_INFO_SIZE = 8  # struct proc_fdinfo { int32 proc_fd; uint32 proc_fdtype; }
 _DARWIN_FD_RECORD_SIZE = 1200  # PROC_PIDFDVNODEPATHINFO_SIZE
 # Field offsets inside that 1200-byte record.  libproc does not lay the header's structs out
@@ -266,7 +267,7 @@ def _darwin_all_pids(lib) -> List[int]:
         if used <= 0:
             return []
         if used < size:
-            return [pid for pid in struct.unpack_from(f"<{used // 4}i", buffer.raw) if pid > 0]
+            return [pid for pid in struct.unpack_from(f"<{used // 4}i", buffer) if pid > 0]
         size *= 2
 
 
@@ -292,15 +293,17 @@ def _iter_darwin_fd_targets():
         else:
             continue
         for offset in range(0, used - _DARWIN_PROC_FD_INFO_SIZE + 1, _DARWIN_PROC_FD_INFO_SIZE):
-            fd = struct.unpack_from("<i", listing.raw, offset)[0]
+            # Read the buffer directly: .raw copies the whole listing for every fd.
+            fd, fdtype = struct.unpack_from("<iI", listing, offset)
+            if fdtype != _DARWIN_FDTYPE_VNODE:
+                continue
             record = ctypes.create_string_buffer(_DARWIN_FD_RECORD_SIZE)
             if lib.proc_pidfdinfo(pid, fd, _DARWIN_PIDFDVNODEPATHINFO, record,
                                   _DARWIN_FD_RECORD_SIZE) <= 0:
                 continue
-            raw = record.raw
-            identity = (struct.unpack_from("<I", raw, _DARWIN_FD_DEV_OFFSET)[0],
-                        struct.unpack_from("<Q", raw, _DARWIN_FD_INO_OFFSET)[0])
-            target = raw[_DARWIN_FD_PATH_OFFSET:].split(b"\x00", 1)[0].decode("utf-8", "replace")
+            identity = (struct.unpack_from("<I", record, _DARWIN_FD_DEV_OFFSET)[0],
+                        struct.unpack_from("<Q", record, _DARWIN_FD_INO_OFFSET)[0])
+            target = record[_DARWIN_FD_PATH_OFFSET:].split(b"\x00", 1)[0].decode("utf-8", "replace")
             yield pid, fd, target, identity
 
 
