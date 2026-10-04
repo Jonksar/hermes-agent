@@ -34,6 +34,10 @@ Key capabilities:
 - **Automatic cleanup** — inactive sessions are closed after a timeout
 - **Vision analysis** — screenshot + AI analysis for visual understanding
 
+## Sign-ins and two-factor authentication
+
+Browser sign-ins use [Passwords & Logins](./credential-vault.md) so passwords and verification codes stay out of chat. If a prompt asks for an Authenticator key or an `otpauth://totp/...` link, see [Find your 2FA setup key](../../guides/find-authenticator-key.md). The guide explains how to find the setup secret in common apps, or enter a one-time code without saving it.
+
 ## Setup
 
 :::tip Nous Subscribers
