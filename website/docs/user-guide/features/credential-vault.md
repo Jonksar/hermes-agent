@@ -50,6 +50,8 @@ Sites that ask for a code after the password are handled the same way:
   to type. The agent tells you to complete it on your device and waits for
   the page to move on.
 
+Need help finding the setup secret? Follow [Find your 2FA setup key](../../guides/find-authenticator-key.md) for 1Password, Bitwarden, Proton Pass, Apple Passwords, Google Authenticator, Microsoft Authenticator and Authy. A setup key is not the rotating verification code. Paste secrets only into the masked vault form, never into chat.
+
 ## Already using 1Password or Bitwarden?
 
 Nothing to enable. If the `op` or `bw` command-line tool is installed and signed

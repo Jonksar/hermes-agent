@@ -743,6 +743,7 @@ const sidebars: SidebarsConfig = {
         'guides/run-nemotron-3-ultra-free',
         'guides/run-hermes-with-nous-portal',
         'guides/tips',
+        'guides/find-authenticator-key',
         'guides/local-llm-on-mac',
         'guides/daily-briefing-bot',
         'guides/team-telegram-assistant',
