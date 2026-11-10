@@ -1035,6 +1035,40 @@ class TestSyncTurn:
         assert p1._document_id.startswith("resumed-session-")
         assert p2._document_id.startswith("resumed-session-")
 
+    def test_cron_run_does_not_auto_retain(self, provider_with_config):
+        """The scheduler initializes providers with agent_context="cron"; a job's
+        turns (its prompt and loaded skills) must stay out of the user's memory."""
+        p = provider_with_config()
+        p.initialize(session_id="cron_job_1", platform="cron", agent_context="cron")
+        p._client = _make_mock_client()
+
+        p.sync_turn("tick prompt", "job output")
+        p._retain_queue.join()
+
+        p._client.aretain_batch.assert_not_called()
+
+    def test_retain_cron_opts_scheduled_runs_back_in(self, provider_with_config):
+        p = provider_with_config(retain_cron=True)
+        p.initialize(session_id="cron_job_1", platform="cron", agent_context="cron")
+        p._client = _make_mock_client()
+
+        p.sync_turn("tick prompt", "job output")
+        p._retain_queue.join()
+
+        p._client.aretain_batch.assert_called_once()
+
+    def test_primary_run_after_cron_init_retains_again(self, provider_with_config):
+        """agent_context is per initialize(): a later primary session is not left muted."""
+        p = provider_with_config()
+        p.initialize(session_id="cron_job_1", platform="cron", agent_context="cron")
+        p.initialize(session_id="chat-1", platform="cli")
+        p._client = _make_mock_client()
+
+        p.sync_turn("hello", "hi there")
+        p._retain_queue.join()
+
+        p._client.aretain_batch.assert_called_once()
+
 
 # ---------------------------------------------------------------------------
 # retain indicator ("saving to memory") tests
@@ -1353,7 +1387,7 @@ class TestConfigSchema:
             "retain_tags", "retain_source",
             "retain_user_prefix", "retain_assistant_prefix",
             "recall_tags", "recall_tags_match",
-            "auto_recall", "auto_retain",
+            "auto_recall", "auto_retain", "retain_cron",
             "retain_every_n_turns", "retain_async", "retain_context",
             "recall_max_tokens", "recall_max_input_chars",
             "recall_prompt_preamble",
