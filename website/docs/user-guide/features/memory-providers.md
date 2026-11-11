@@ -462,6 +462,7 @@ The setup wizard installs dependencies automatically and only installs what's ne
 | `recall_budget` | `mid` | Recall thoroughness: `low` / `mid` / `high` |
 | `memory_mode` | `hybrid` | `hybrid` (context + tools), `context` (auto-inject only), `tools` (tools only) |
 | `auto_retain` | `true` | Automatically retain conversation turns |
+| `retain_cron` | `false` | Also auto-retain scheduled (cron) runs; off by default so job prompts and output stay out of the user's memory |
 | `auto_recall` | `true` | Automatically recall memories before each turn |
 | `retain_async` | `true` | Process retain asynchronously on the server |
 | `retain_context` | `conversation between Hermes Agent and the User` | Context label for retained memories |

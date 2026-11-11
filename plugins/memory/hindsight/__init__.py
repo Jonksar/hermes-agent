@@ -338,6 +338,7 @@ class HindsightMemoryProvider(MemoryProvider):
         for name in _SESSION_KWARGS:
             setattr(self, f"_{name}", "")
         self._session_id = self._parent_session_id = self._document_id = ""
+        self._agent_context = "primary"
         self._status_callback: Optional[Callable[[str], None]] = None
 
         # Retain: single-writer model — sync_turn() enqueues, one writer thread
@@ -446,6 +447,7 @@ class HindsightMemoryProvider(MemoryProvider):
             {"key": "recall_indicator", "description": "Show a '👁️ Hindsight — recalled N memories' status line when auto-recall injects memory (turn off for customer-facing agents)", "default": True},
             {"key": "retain_indicator", "description": "Show a '👁️ Hindsight — saving to memory…' status line when a turn is saved to memory (turn off for customer-facing agents)", "default": True},
             {"key": "auto_retain", "description": "Automatically retain conversation turns", "default": True},
+            {"key": "retain_cron", "description": "Also auto-retain scheduled (cron) runs; off by default so job prompts and output stay out of the user's memory", "default": False},
             {"key": "retain_every_n_turns", "description": "Retain every N turns (1 = every turn)", "default": 1},
             {"key": "retain_async","description": "Process retain asynchronously on the Hindsight server", "default": True},
             {"key": "prefetch_waits_for_retain", "description": "Have the background next-turn prefetch wait for the just-completed retain to become recall-visible on the server (local queue drain + async operation completion) before recalling, so recall includes the just-completed turn (runs off the reply path, adds no response latency)", "default": True},
@@ -673,6 +675,8 @@ class HindsightMemoryProvider(MemoryProvider):
     def initialize(self, session_id: str, **kwargs) -> None:
         self._session_id = str(session_id or "").strip()
         self._parent_session_id = str(kwargs.get("parent_session_id", "") or "").strip()
+        # "primary" | "subagent" | "cron" | "flush"; read by _apply_retain_policy.
+        self._agent_context = str(kwargs.get("agent_context") or "primary")
         # Status channel for the retain indicator (recall reports via recall_status()).
         if callable(kwargs.get("status_callback")):
             self._status_callback = kwargs["status_callback"]
@@ -769,7 +773,10 @@ class HindsightMemoryProvider(MemoryProvider):
 
     def _apply_retain_policy(self, cfg: dict) -> None:
         """Pure-config retain knobs (no env/secret reads; ``{}`` yields the defaults)."""
-        self._auto_retain = cfg.get("auto_retain", True)
+        # Provider contract: no automatic writes for scheduled runs (a job's prompt and
+        # loaded skills are not the user's conversation). retain_cron opts back in.
+        is_cron = self._agent_context == "cron"
+        self._auto_retain = bool(cfg.get("auto_retain", True)) and (not is_cron or bool(cfg.get("retain_cron", False)))
         self._retain_every_n_turns = max(1, int(cfg.get("retain_every_n_turns", 1)))
         self._retain_context = cfg.get("retain_context", _RETAIN_CONTEXT_DEFAULT)
         self._retain_async = cfg.get("retain_async", True)

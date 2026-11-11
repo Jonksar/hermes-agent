@@ -93,6 +93,7 @@ Config file: `~/.hermes/hindsight/config.json`
 | Key | Default | Description |
 |-----|---------|-------------|
 | `auto_retain` | `true` | Automatically retain conversation turns |
+| `retain_cron` | `false` | Also auto-retain scheduled (cron) runs. Off by default: a job's prompt and output are not the user's conversation. Recall and the `hindsight_retain` tool still work in cron runs |
 | `retain_async` | `true` | Process retain asynchronously on the Hindsight server |
 | `retain_every_n_turns` | `1` | Retain every N turns (1 = every turn) |
 | `retain_context` | `conversation between Hermes Agent and the User` | Context label for retained memories |
